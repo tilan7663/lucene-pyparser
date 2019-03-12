@@ -1,8 +1,14 @@
 import json
 
+from lucene_parser.doc_values_data import DocValuesData
+from lucene_parser.doc_values_meta import DocValuesMeta
 from lucene_parser.field_data import FieldData
 from lucene_parser.field_infos import FieldInfos
 from lucene_parser.field_index import FieldIndex
+from lucene_parser.points_data import PointsData
+from lucene_parser.points_index import PointsIndex
+from lucene_parser.norm_data import NormData
+from lucene_parser.norm_meta import NormMeta
 from lucene_parser.shard_parser import ShardParser
 
 def main():
@@ -25,10 +31,37 @@ def main():
 		field_data = FieldData(segment_info, field_index, field_infos)
 		field_data.parse_field_data()
 
-		# for docs in field_data:
-		# 	for doc in docs:
-		# 		print(json.dumps(doc, sort_keys=False, indent=4))
+		for docs in field_data:
+			for doc in docs:
+				print(json.dumps(doc, sort_keys=False, indent=4))
+				break
 
+		doc_values_meta = DocValuesMeta(segment_info, field_infos)
+		doc_values_meta.parse_doc_values_meta()
+		print(doc_values_meta)
+
+		doc_values_data = DocValuesData(segment_info, doc_values_meta)
+		doc_values_data.parse_doc_values_data()
+
+		norm_meta = NormMeta(segment_info, field_infos)
+		norm_meta.parse_norm_meta()
+		print(norm_meta)
+
+		norm_data = NormData(segment_info, norm_meta)
+		norm_data.parse_norm_data()
+		# print(norm_data)
+
+		points_index = PointsIndex(segment_info, field_infos)
+		points_index.parse_points_index()
+		print(points_index)
+
+		points_data = PointsData(segment_info, points_index)
+		points_data.parse_points_data()
+
+		# for field_num, reader in points_data:
+		# 	print("field_num {}, reader {}".format(field_infos[field_num], reader))
+		# 	state = reader.get_intersect_state()
+		# 	reader.visit_all(state)
 
 if __name__ == "__main__":
 	main()

@@ -335,7 +335,7 @@ def parse_header(f, suffix=True):
 	name = read_string(f)
 
 	# version 6 means lucene codec53
-	version = f.read(4)
+	version = intfy(f.read(4))
 
 	if not suffix:
 		return header_magic, name, version
@@ -641,6 +641,7 @@ def parse_field_index(f, offset, length):
 	return field_index, max_pointer
 
 # https://lucene.apache.org/core/6_6_1/core/org/apache/lucene/codecs/lucene50/Lucene50StoredFieldsFormat.html
+# CompressingStoredFieldsWriter (MergeInstance)
 def parse_field_data(f, offset, d_length, max_pointer, field_index, fields_info):
 	# getting footer information ahead of time
 	f.seek(offset + max_pointer)
@@ -683,7 +684,7 @@ def parse_field_data(f, offset, d_length, max_pointer, field_index, fields_info)
 		if chunk_docs == 1:
 			doc_fields_count = [read_vint(f)]
 			doc_offsets = read_vint(f)
-			offset[1] = doc_offsets
+			offsets[1] = doc_offsets
 		else:
 			bits_required = read_vint(f)
 			if bits_required == 0:
