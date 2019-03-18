@@ -1006,13 +1006,13 @@ def parse_term(f_dict, offset_dict, length_dict, fields_info, f_index, offset_in
 		fields[field_name]["index_start_ptr"] = index_start_ptr
 		fields[field_name]["sum_total_term_freq"] = sum_total_term_freq
 
+		# root_code_f scratchReader for SegmentTermsEnum
 		root_code_f = io.BufferedReader(io.BytesIO(root_code))
 		root_block_long = read_vlong(root_code_f)
 
 		root_block_fp = root_block_long >> 2
 		has_term = root_block_long & 0x2
 		is_floor = root_block_long & 0x1
-
 
 		fields[field_name]["root_block_fp"] = root_block_fp
 		fields[field_name]["has_term"] = has_term

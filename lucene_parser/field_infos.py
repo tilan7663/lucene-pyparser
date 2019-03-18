@@ -61,6 +61,30 @@ class FieldInfos(FileReader):
 		actual_checksum = compute_checksum(f, self.offset, self.length)
 		print_footer(footer_magic, checksum_algo, checksum, actual_checksum)
 
+	def has_prox(self):
+		for _, field in self.fields.items():
+			index_option_bits = field["index_option_bits"]
+			if index_option_bits >= INDEX_OPTION_DOCS_FREQS_POSITIONS:
+				return True
+
+		return False
+
+	def has_offsets(self):
+		for _, field in self.fields.items():
+			index_option_bits = field["index_option_bits"]
+			if index_option_bits >= INDEX_OPTION_DOCS_FREQS_POSITIONS_OFFSETS:
+				return True
+
+		return False
+
+	def has_payloads(self):
+		for _, field in self.fields.items():
+			store_payload = field["store_payload"]
+			if store_payload:
+				return True
+
+		return False
+
 	def __str__(self):
 		return json.dumps(self.fields, sort_keys=False, indent=4)
 

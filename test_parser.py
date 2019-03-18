@@ -1,15 +1,20 @@
 import json
 
+from lucene_parser.doc_reader import DocReader
 from lucene_parser.doc_values_data import DocValuesData
 from lucene_parser.doc_values_meta import DocValuesMeta
 from lucene_parser.field_data import FieldData
 from lucene_parser.field_infos import FieldInfos
 from lucene_parser.field_index import FieldIndex
-from lucene_parser.points_data import PointsData
-from lucene_parser.points_index import PointsIndex
 from lucene_parser.norm_data import NormData
 from lucene_parser.norm_meta import NormMeta
+from lucene_parser.points_data import PointsData
+from lucene_parser.points_index import PointsIndex
+from lucene_parser.pos_reader import PosReader
+from lucene_parser.posting_reader import PostingReader
 from lucene_parser.shard_parser import ShardParser
+from lucene_parser.term_dict import TermDict
+from lucene_parser.term_index import TermIndex
 
 def main():
 	shard_parser = ShardParser("/home/tian/Work/lucene/index/", 5)
@@ -31,10 +36,9 @@ def main():
 		field_data = FieldData(segment_info, field_index, field_infos)
 		field_data.parse_field_data()
 
-		for docs in field_data:
-			for doc in docs:
-				print(json.dumps(doc, sort_keys=False, indent=4))
-				break
+		# for docs in field_data:
+		# 	for doc in docs:
+		# 		print(json.dumps(doc, sort_keys=False, indent=4))
 
 		doc_values_meta = DocValuesMeta(segment_info, field_infos)
 		doc_values_meta.parse_doc_values_meta()
@@ -62,6 +66,33 @@ def main():
 		# 	print("field_num {}, reader {}".format(field_infos[field_num], reader))
 		# 	state = reader.get_intersect_state()
 		# 	reader.visit_all(state)
+
+		posting_reader = PostingReader(segment_info, field_infos)
+
+		term_index = TermIndex(segment_info)
+		term_index.parse_term_index()
+
+		term_dict = TermDict(segment_info, term_index, field_infos)
+		term_dict.parse_term_dict()
+		print(term_dict)
+
+		for field_name in term_dict:
+			terms_iter = term_dict.parse_posting(field_name)
+			
+			field = term_dict[field_name]
+			field_info = field_infos[field["field_number"]]
+			for i, term_tuple in enumerate(terms_iter):
+				term = term_tuple[0]
+				term_state = term_tuple[1]
+
+				doc_ids = posting_reader.parse_posting(term_state, field_info)
+				print("field name {}, id {}, term {}, doc_ids {}".format(field_name, i, term, doc_ids))
+
+		# doc_reader = DocReader(segment_info)
+		# doc_reader.parse_doc_reader()
+
+		# pos_reader = PosReader(segment_info)
+		# pos_reader.parse_pos_reader()
 
 if __name__ == "__main__":
 	main()

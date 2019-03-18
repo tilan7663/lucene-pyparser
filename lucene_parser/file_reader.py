@@ -23,3 +23,9 @@ class FileReader(object):
 			f = open(field_info_path, "rb")
 
 		return f
+
+	def set_fp_end(self):
+		if self.is_compound_file:
+			self.f.seek(self.offset + self.length)
+		else:
+			self.f.seek(0, 2)
