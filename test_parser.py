@@ -68,6 +68,7 @@ def main():
 		# 	reader.visit_all(state)
 
 		posting_reader = PostingReader(segment_info, field_infos)
+		print(posting_reader)
 
 		term_index = TermIndex(segment_info)
 		term_index.parse_term_index()
@@ -81,12 +82,15 @@ def main():
 			
 			field = term_dict[field_name]
 			field_info = field_infos[field["field_number"]]
-			for i, term_tuple in enumerate(terms_iter):
-				term = term_tuple[0]
-				term_state = term_tuple[1]
+			try:
+				for i, term_tuple in enumerate(terms_iter):
+					term = term_tuple[0]
+					term_state = term_tuple[1]
 
-				doc_ids = posting_reader.parse_posting(term_state, field_info)
-				print("field name {}, id {}, term {}, doc_ids {}".format(field_name, i, term, doc_ids))
+					doc_ids = posting_reader.parse_posting(term_state, field_info)
+					# print("field name {}, id {}, term {}, doc_ids {}".format(field_name, i, term, doc_ids))
+			except Exception as e:
+				print("field_name {}, msg {}".format(field_name, str(e)))
 
 		# doc_reader = DocReader(segment_info)
 		# doc_reader.parse_doc_reader()

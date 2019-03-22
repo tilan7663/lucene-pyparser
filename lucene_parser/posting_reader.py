@@ -1,3 +1,6 @@
+import json
+import math
+
 from .constants import *
 from .doc_reader import DocReader
 from .payload_reader import PayloadReader
@@ -17,6 +20,8 @@ class PostingReader(object):
 			if field_infos.has_payloads() or field_infos.has_offsets():
 				self.payload_reader = PayloadReader(segment_info)
 				self.payload_reader.parse_payload_reader
+
+		self.init_for_util()
 
 	def parse_posting(self, term_state, field_info):
 		index_opts = field_info["index_option_bits"]
@@ -61,12 +66,44 @@ class PostingReader(object):
 		assert left > 0
 		if left > BLOCK_SIZE:
 			# readBlock
+			self.read_block(f_doc, doc_delta_buffer)
+			if index_has_freq:
+				# skip frequency
+				self.skip_block(f_doc)
+
 			raise Exception("not implemented yet")
 		elif doc_freq == 1:
 			# special case
 			doc_delta_buffer[0] = singleton_doc_id
 		else:
 			self.parse_posting_vint_block(f_doc, doc_delta_buffer, index_has_freq, left)
+
+	def read_block(self, f_doc, buffer):
+		num_bits = read_byte(f_doc)
+		assert num_bits <= 32
+
+		if num_bits == ALL_VALUES_EQUAL:
+			value = read_vint(f_doc)
+			for i in range(BLOCK_SIZE):
+				buffer[i] = value
+
+		encoded_size = self.encoded_sizes[num_bits]["encoded_size"]
+		encoded_bytes = f_doc.read(encoded_size)
+
+		raise Exception("num_bits: {}".format(num_bits))
+
+	def skip_block(self, f_doc):
+		num_bits = read_byte(f_doc)
+		if num_bits == ALL_VALUES_EQUAL:
+			read_vint(f_doc)
+			return
+
+		assert num_bits > 0 and num_bits <= 32
+		encoded_size = self.encoded_sizes[num_bits]["encoded_size"]
+		if encoded_size is None:
+			raise Exception("not implemented")
+
+		f_doc.seek(f_doc.tell() + encoded_size)
 
 	def parse_posting_vint_block(self, f_doc, doc_delta_buffer, index_has_freq, left):
 		if index_has_freq:
@@ -80,3 +117,31 @@ class PostingReader(object):
 		else:
 			for i in range(left):
 				doc_delta_buffer[i] = read_vint(f_doc)
+
+	def encode_size(self, format_id, value_count, bits_per_value):
+		if format_id == 0:
+			byte_count = math.ceil(value_count * bits_per_value / 8)
+			assert byte_count >= 0 and byte_count < 2 ** 31
+			return byte_count
+		else:
+			values_per_block = 64 / bits_per_value
+
+			long_count = math.ceil(value_count / values_per_block)
+			return 8 * long_count
+
+	def init_for_util(self):
+		f = self.doc_reader.f
+
+		packed_int_version = read_vint(f)
+		encoded_sizes = {}
+		for i in range(1, 33):
+			code = read_vint(f)
+			format_id = code >> 5
+			bits_per_value = (code & 31) + 1
+			encoded_size = self.encode_size(format_id, BLOCK_SIZE, bits_per_value)
+			encoded_sizes[i] = {"format_id": format_id, "bits_per_value": bits_per_value, "code": code, "encoded_size": encoded_size}
+
+		self.encoded_sizes = encoded_sizes
+
+	def __str__(self):
+		return json.dumps(self.encoded_sizes, sort_keys=False, indent=4)
