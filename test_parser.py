@@ -88,9 +88,10 @@ def main():
 					term_state = term_tuple[1]
 
 					doc_ids = posting_reader.parse_posting(term_state, field_info)
-					# print("field name {}, id {}, term {}, doc_ids {}".format(field_name, i, term, doc_ids))
+					print("field name {}, id {}, term {}, doc_ids {}, len {}".format(field_name, i, term, set(doc_ids), len(set(doc_ids))))
 			except Exception as e:
-				print("field_name {}, msg {}".format(field_name, str(e)))
+				print("field_name {}, msg {}".format(field_name, e))
+				# raise
 
 		# doc_reader = DocReader(segment_info)
 		# doc_reader.parse_doc_reader()
